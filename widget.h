@@ -8,7 +8,8 @@
 #include <QNetworkInterface>
 #include <QSettings>
 #include "mytcpclient.h"
-
+#include <QProgressDialog>
+#include <QFileDialog>
 
 #define TCPSERVER 10
 #define TCPCLIENT 20
@@ -75,7 +76,7 @@ static const uint8_t table_crc_lo[] = {
     0x43, 0x83, 0x41, 0x81, 0x80, 0x40
 };
 
-
+class MyProgressDlg;
 
 namespace Ui {
 class Widget;
@@ -92,8 +93,14 @@ public:
 #define    CC_QUERY_CONN  0x00  // 命令字-查询设备是否在线指令
 #define    CC_SET_IAP     0x03  // 命令字-在线升级指令
 
-#define    OFFSET_FC      8    // 命令字在数据包中的索引
-#define    OFFSET_CC      7    // 功能码在数据包中的索引
+#define    OFFSET_FC      8    // 功能码在数据包中的索引
+#define    OFFSET_CC      7    // 命令字在数据包中的索引
+
+#define    PROGRESS_PERIOD 100   // 100ms刷新一次
+#define    WR_PERIOD       500   // 500ms写一次
+#define    CONN_TIMEOUT    10000 // 跟设备连接超时时间，暂定10s
+#define    OP_TIMEOUT      (120000) // 如果设备连接成功后，2min内没有操作，那么重新复位设备，断开连接
+    //1000*60*2
 
     enum FlashStep {
         FlashStep_ToConnDev,
@@ -111,6 +118,8 @@ public:
     bool setupConnection(quint8 type);
 private slots:
     void writeTimeOut();
+    void connTimeOut();
+    void connPDlgTimeout();
 
 private slots:
     void onTcpClientButtonClicked();
@@ -120,6 +129,7 @@ private slots:
     void onTcpClientDisconnectButtonClicked();
     void onTcpClientDisconnected();
     void onTcpClientAppendMessage(const QString &from, const QByteArray &message);
+    void onDeviceConnSuccess();
 
     void on_transmitBrowse_clicked();
     void on_transmitButton_clicked();
@@ -144,6 +154,11 @@ private:
 
     enum FlashStep flash_step;
     QTimer *writeTimer = nullptr;
+    QTimer *connTimer = nullptr;
+
+    MyProgressDlg *connPDlg = nullptr;
+
+    QFileDialog *fileDlg = nullptr;
 
     quint8 rec_buff[REC_BUFF_MAX_LEN] = {0};
 };
@@ -151,6 +166,20 @@ private:
 class MyTimer
 {
 
+};
+
+class MyProgressDlg : public QProgressDialog
+{
+    Q_OBJECT
+
+public:
+    explicit MyProgressDlg(QWidget *parent = nullptr);
+    ~MyProgressDlg();
+
+    void keyPressEvent(QKeyEvent *event);
+
+    QTimer *progressTimer = nullptr;
+    quint32 progressCnt = 0;
 };
 
 #endif // WIDGET_H
