@@ -2,6 +2,7 @@
 #include "ui_widget.h"
 #include <QMessageBox>
 #include <QKeyEvent>
+#include <QDateTime>
 
 uint16_t crc16(uint8_t *buffer, uint16_t buffer_length)
 {
@@ -69,6 +70,7 @@ Widget::Widget(QWidget *parent) :
 
 Widget::~Widget()
 {
+    saveSettings();
     delete ui;
     delete mytcpclient;
     delete ymodemFileTransmit;
@@ -82,9 +84,30 @@ void Widget::loadSettings()
 {
     settingsFileDir = QApplication::applicationDirPath() + "/config.ini";
     QSettings settings(settingsFileDir, QSettings::IniFormat);
-    ui->lineEdit_TcpClientTargetIP->setText(settings.value("TCP_CLIENT_TARGET_IP", "10.10.100.254").toString());
-//    ui->lineEdit_TcpClientTargetIP->setText(settings.value("TCP_CLIENT_TARGET_IP", "192.168.50.250").toString());
-    ui->lineEdit_TcpClientTargetPort->setText(settings.value("TCP_CLIENT_TARGET_PORT", 8899).toString());
+
+    QFileInfo fi(settingsFileDir);
+    QDateTime date;
+
+    if(!fi.exists()) {
+        qDebug("file config.ini do not exist, creat new, set new configuration");
+        date = fi.created();
+        qDebug() << "create date: " << date.currentDateTime();
+        ui->lineEdit_TcpClientTargetIP->setText(settings.value("TCP_CLIENT_TARGET_IP", "10.10.100.254").toString());
+        ui->lineEdit_TcpClientTargetPort->setText(settings.value("TCP_CLIENT_TARGET_PORT", 8899).toString());
+        saveSettings();
+    }else{
+        qDebug("file config.ini already exist, load configration");
+        ui->lineEdit_TcpClientTargetIP->setText(settings.value("TCP_CLIENT_TARGET_IP").toString());
+        ui->lineEdit_TcpClientTargetPort->setText(settings.value("TCP_CLIENT_TARGET_PORT").toString());
+    }
+}
+
+void Widget::saveSettings()
+{
+    QSettings settings(settingsFileDir, QSettings::IniFormat);
+    settings.setValue("TCP_CLIENT_TARGET_IP", ui->lineEdit_TcpClientTargetIP->text());
+    settings.setValue("TCP_CLIENT_TARGET_PORT", ui->lineEdit_TcpClientTargetPort->text());
+    settings.sync();
 }
 
 bool Widget::setupConnection(quint8 type)
@@ -705,7 +728,7 @@ void MyProgressDlg::keyPressEvent(QKeyEvent *event)
 
 void Widget::on_button_about_clicked()
 {
-    QMessageBox::about(this, tr("关于"), tr("[充电站在线升级工具]\r\n功能:  升级充电站的固件程序\r\n作者:  李扬\r\n邮箱:  liyang@ecthf.com\r\n公司：安徽博微智能电气有限公司"));
+    QMessageBox::about(this, tr("关于"), tr("[在线升级工具]\r\n功能:  在线升级充电站的固件程序(海康定制版专用)\r\n作者:  李扬\r\n邮箱:  liyang@ecthf.com\r\n公司：安徽博微智能电气有限公司"));
     return;
 }
 
