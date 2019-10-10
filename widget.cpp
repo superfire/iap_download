@@ -740,10 +740,9 @@ void MyProgressDlg::keyPressEvent(QKeyEvent *event)
 
 void Widget::on_button_about_clicked()
 {
-    QMessageBox::about(this, tr("关于"), tr("[ 在线升级工具 ]\r\n"
-                                          "功能:  在线升级充电站的固件程序(海康定制版专用)\r\n"
+    QMessageBox::about(this, tr("关于"), tr("功能:  在线升级充电站的固件程序(海康定制版专用)\r\n"
                                           "版本:  V1.0\r\n"
-                                          "编译时间:  20191010 20:11\r\n"
+                                          "编译时间:  20191010 20:26\r\n"
                                           "作者:  李扬\r\n"
                                           "邮箱:  liyang@ecthf.com\r\n"
                                           "公司：安徽博微智能电气有限公司"));
@@ -752,7 +751,9 @@ void Widget::on_button_about_clicked()
 
 void Widget::on_button_help_clicked()
 {
-    QMessageBox::about(this, tr("帮助"), tr("1.修改“IP”为充电站的IP地址，“Port”保持不变\r\n"
+    QMessageBox::about(this, tr("帮助"), tr("注意：操作软件前，请先确保电脑已经通过网络(WIFI或者网线)连接到了充电站\r\n"
+                                          "然后执行以下操作：\r\n\r\n"
+                                          "1.修改“IP”为充电站的IP地址(根据实际情况填写)，“Port”填写8899)\r\n"
                                           "2.点击[连接]，会提示连接成功。（如果提示连接失败，请检查网络或者IP地址等）\r\n"
                                           "3.点击[浏览]，在弹出的窗口中选择升级文件，选好后确定\r\n"
                                           "4.点击[升级]，进度栏会显示执行进度\r\n"
