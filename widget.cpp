@@ -32,7 +32,7 @@ Widget::Widget(QWidget *parent) :
     fileDlg(new QFileDialog(this))
 {
     ui->setupUi(this);
-    this->setWindowTitle(tr("在线升级工具"));
+    this->setWindowTitle(tr("充电站在线升级工具(海康定制版专用)"));
     this->setFixedSize( this->width (),this->height ());
 
     ui->transmitBrowse->setDisabled(true);
@@ -317,6 +317,8 @@ void Widget::onTcpClientAppendMessage(const QString &from, const QByteArray &mes
             writeTimer->stop();
             connTimer->stop();
 
+            devOnlineStatus = true;
+
             QMessageBox::information(this, "提示", "设备连接成功", u8"确定");
 
             qDebug("enter next step->start flashing");
@@ -417,6 +419,8 @@ void Widget::onDeviceConnSuccess()
         ui->transmitButton->setEnabled(true);
     }
 
+    devOnlineStatus = true;
+
     // 停止超时计时器和写计时器
     writeTimer->stop();
     connTimer->stop();
@@ -507,6 +511,8 @@ void Widget::connTimeOut()
         // 停止连接超时定时器
         connTimer->stop();
     }
+
+    devOnlineStatus = false;
 }
 
 void Widget::connPDlgTimeout()
@@ -520,7 +526,7 @@ void Widget::on_transmitBrowse_clicked()
 //    fileDlg->show();
 //    fileDlg->setWindowTitle(tr("打开文件"));
 //    fileDlg->setNameFilter(tr("任意文件 (*.*)"));
-    ui->transmitPath->setText(fileDlg->getOpenFileName(this, u8"打开文件", ".", u8"任意文件 (*.*)"));
+    ui->transmitPath->setText(fileDlg->getOpenFileName(this, u8"打开文件", ".", u8"二进制文件 (*.bin)"));
 
     if(ui->transmitPath->text().isEmpty() != true)
     {
@@ -529,6 +535,12 @@ void Widget::on_transmitBrowse_clicked()
     else
     {
         ui->transmitButton->setDisabled(true);
+    }
+
+    if( devOnlineStatus == false ) {
+        ui->transmitButton->setDisabled(true);
+        ui->transmitPath->setText("");
+        ui->transmitBrowse->setDisabled(true);
     }
 }
 
