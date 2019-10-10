@@ -137,6 +137,8 @@ private slots:
     void transmitStatus(YmodemFileTransmit::Status status);
 
     void transmitTcpclientResult(bool result);
+    void on_button_about_clicked();
+
 private:
     Ui::Widget *ui;
 

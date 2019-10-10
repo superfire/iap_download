@@ -702,3 +702,9 @@ void MyProgressDlg::keyPressEvent(QKeyEvent *event)
         break;
     }
 }
+
+void Widget::on_button_about_clicked()
+{
+    QMessageBox::about(this, tr("关于"), tr("AGV充电站固件升级工具\r\n功能:  升级充电站的固件程序\r\n作者:  李扬\r\n邮箱:  liyang@ecthf.com\r\n公司：安徽博微智能电气有限公司"));
+    return;
+}
