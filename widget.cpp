@@ -31,22 +31,22 @@ Widget::Widget(QWidget *parent) :
     fileDlg(new QFileDialog(this))
 {
     ui->setupUi(this);
-    this->setWindowTitle(tr("agv充电站程序升级工具"));
+    this->setWindowTitle(tr("在线升级工具"));
     this->setFixedSize( this->width (),this->height ());
 
     ui->transmitBrowse->setDisabled(true);
 
     // 连接中的进度对话框
-    connPDlg->setWindowTitle("连接设备");
-    connPDlg->setMinimum(0);
-    connPDlg->setMaximum( CONN_TIMEOUT/PROGRESS_PERIOD );
-    connPDlg->setValue(0);
-    connPDlg->setLabelText("connecting...");
-    connPDlg->setWindowFlag( Qt::FramelessWindowHint );
-    connPDlg->setModal(true);
-    QPushButton *btn = nullptr;
-    connPDlg->setCancelButton(btn);
-    connPDlg->reset(); // 必须添加，否则new完后，会自动弹出
+//    connPDlg->setWindowTitle("连接设备");
+//    connPDlg->setMinimum(0);
+//    connPDlg->setMaximum( CONN_TIMEOUT/PROGRESS_PERIOD );
+//    connPDlg->setValue(0);
+//    connPDlg->setLabelText("connecting...");
+//    connPDlg->setWindowFlag( Qt::FramelessWindowHint );
+//    connPDlg->setModal(true);
+//    QPushButton *btn = nullptr;
+//    connPDlg->setCancelButton(btn);
+//    connPDlg->reset(); // 必须添加，否则new完后，会自动弹出
 
     transmitButtonStatus = false;
     receiveButtonStatus  = false;
@@ -672,17 +672,17 @@ void Widget::transmitStatus(Ymodem::Status status)
 MyProgressDlg::MyProgressDlg(QWidget *parent):
     progressTimer(new QTimer())
 {
-//    setWindowTitle("连接设备");
-//    setMinimum(0);
-//    setMaximum(20);
-//    setValue(0);
-//    setLabelText("connecting...");
-//    setWindowFlag(Qt::FramelessWindowHint);
-//    setModal(true);
-//    QPushButton *btn = nullptr;
-//    setCancelButton(btn);
-//    reset(); // 必须添加，否则new完后，会自动弹出
-
+    setWindowTitle("连接设备");
+    setMinimum(0);
+    setMaximum( CONN_TIMEOUT/PROGRESS_PERIOD );
+    setValue(0);
+    setLabelText("connecting...");
+    setWindowFlag( Qt::FramelessWindowHint );
+    setModal(true);
+    QPushButton *btn = nullptr;
+    setCancelButton(btn);
+    reset(); // 必须添加，否则new完后，会自动弹出
+    hide();
 }
 
 MyProgressDlg::~MyProgressDlg()
@@ -705,6 +705,16 @@ void MyProgressDlg::keyPressEvent(QKeyEvent *event)
 
 void Widget::on_button_about_clicked()
 {
-    QMessageBox::about(this, tr("关于"), tr("AGV充电站固件升级工具\r\n功能:  升级充电站的固件程序\r\n作者:  李扬\r\n邮箱:  liyang@ecthf.com\r\n公司：安徽博微智能电气有限公司"));
+    QMessageBox::about(this, tr("关于"), tr("[充电站在线升级工具]\r\n功能:  升级充电站的固件程序\r\n作者:  李扬\r\n邮箱:  liyang@ecthf.com\r\n公司：安徽博微智能电气有限公司"));
+    return;
+}
+
+void Widget::on_button_help_clicked()
+{
+    QMessageBox::about(this, tr("帮助"), tr("1.修改“IP”为充电站的IP地址，“Port”保持不变\r\n"
+                                          "2.点击[连接]，会提示连接成功。（如果提示连接失败，请检查网络或者IP地址等）\r\n"
+                                          "3.点击[浏览]，在弹出的窗口中选择升级文件，选好后确定\r\n"
+                                          "4.点击[升级]，进度栏会显示执行进度\r\n"
+                                          "5.升级完成后，关闭软件\r\n"));
     return;
 }
