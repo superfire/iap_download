@@ -115,6 +115,7 @@ public:
 
 public:
     void loadSettings();
+    void saveSettings();
     bool setupConnection(quint8 type);
 private slots:
     void writeTimeOut();
