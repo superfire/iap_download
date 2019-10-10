@@ -60,8 +60,8 @@ RC_LANG = 0x0004
 # 公司名
 QMAKE_TARGET_COMPANY = 安徽博微智能电气有限公司
 # 产品名称
-QMAKE_TARGET_PRODUCT = 固件升级工具软件
+QMAKE_TARGET_PRODUCT = 充电站固件在线升级工具(海康定制版专用)
 # 详细描述
-QMAKE_TARGET_DESCRIPTION = 本软件用于充电站固件升级(海康定制版专用)
+QMAKE_TARGET_DESCRIPTION = 在线升级
 # 版权
 QMAKE_TARGET_COPYRIGHT = Copyright(C) 2019 CETC ECRIEEPOWER (ANHUI) CO.,LTD.
