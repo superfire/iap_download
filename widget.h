@@ -139,6 +139,8 @@ private slots:
     void transmitTcpclientResult(bool result);
     void on_button_about_clicked();
 
+    void on_button_help_clicked();
+
 private:
     Ui::Widget *ui;
 

@@ -44,9 +44,24 @@ HEADERS += \
 FORMS += \
         widget.ui
 
-RC_ICONS = res/logo.ico
-
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+# 图标
+RC_ICONS += res/logo.ico
+# 版本号
+VERSION = 1.0.0
+# 语言
+# 0x0004 表示 简体中文
+# 详见 https://msdn.microsoft.com/en-us/library/dd318693%28vs.85%29.aspx
+RC_LANG = 0x0004
+# 公司名
+QMAKE_TARGET_COMPANY = 安徽博微智能电气有限公司
+# 产品名称
+QMAKE_TARGET_PRODUCT = 固件升级工具软件
+# 详细描述
+QMAKE_TARGET_DESCRIPTION = 本软件用于充电站固件升级(海康定制版专用)
+# 版权
+QMAKE_TARGET_COPYRIGHT = Copyright(C) 2019 CETC ECRIEEPOWER (ANHUI) CO.,LTD.

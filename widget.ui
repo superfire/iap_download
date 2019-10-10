@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>481</width>
-    <height>191</height>
+    <height>212</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>90</y>
+     <y>110</y>
      <width>451</width>
      <height>85</height>
     </rect>
@@ -88,7 +88,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>20</y>
+     <y>40</y>
      <width>454</width>
      <height>57</height>
     </rect>
@@ -224,17 +224,48 @@
   <widget class="QPushButton" name="button_about">
    <property name="geometry">
     <rect>
-     <x>380</x>
-     <y>0</y>
+     <x>300</x>
+     <y>10</y>
      <width>71</width>
      <height>23</height>
     </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::StrongFocus</enum>
    </property>
    <property name="autoFillBackground">
     <bool>false</bool>
    </property>
    <property name="text">
     <string>关于</string>
+   </property>
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="button_help">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>10</y>
+     <width>71</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::StrongFocus</enum>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>帮助</string>
    </property>
    <property name="checkable">
     <bool>false</bool>
