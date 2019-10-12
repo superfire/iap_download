@@ -217,6 +217,7 @@ Ymodem::Code YmodemFileTransmit::callback(Status status, uint8_t *buff, uint32_t
         case StatusTimeout:
         {
             YmodemFileTransmit::status = StatusTimeout;
+            mytcpclient->closeClient();
 
             writeTimer->start(WRITE_TIME_OUT);
 

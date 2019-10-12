@@ -131,6 +131,7 @@ private slots:
     void onTcpClientDisconnected();
     void onTcpClientAppendMessage(const QString &from, const QByteArray &message);
     void onDeviceConnSuccess();
+    void onDeviceDisconn();
 
     void on_transmitBrowse_clicked();
     void on_transmitButton_clicked();
@@ -141,7 +142,6 @@ private slots:
     void on_button_about_clicked();
 
     void on_button_help_clicked();
-
 private:
     Ui::Widget *ui;
 
