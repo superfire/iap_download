@@ -52,7 +52,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 # 图标
 RC_ICONS += res/logo.ico
 # 版本号
-VERSION = 1.0.0
+VERSION = 1.0.0.1
 # 语言
 # 0x0004 表示 简体中文
 # 详见 https://msdn.microsoft.com/en-us/library/dd318693%28vs.85%29.aspx

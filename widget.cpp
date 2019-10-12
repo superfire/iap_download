@@ -31,23 +31,12 @@ Widget::Widget(QWidget *parent) :
     connPDlg(new MyProgressDlg(this)),
     fileDlg(new QFileDialog(this))
 {
+    qDebug() << "widget init...";
     ui->setupUi(this);
     this->setWindowTitle(tr("充电站在线升级工具(海康定制版专用)"));
     this->setFixedSize( this->width (),this->height ());
 
     ui->transmitBrowse->setDisabled(true);
-
-    // 连接中的进度对话框
-//    connPDlg->setWindowTitle("连接设备");
-//    connPDlg->setMinimum(0);
-//    connPDlg->setMaximum( CONN_TIMEOUT/PROGRESS_PERIOD );
-//    connPDlg->setValue(0);
-//    connPDlg->setLabelText("connecting...");
-//    connPDlg->setWindowFlag( Qt::FramelessWindowHint );
-//    connPDlg->setModal(true);
-//    QPushButton *btn = nullptr;
-//    connPDlg->setCancelButton(btn);
-//    connPDlg->reset(); // 必须添加，否则new完后，会自动弹出
 
     transmitButtonStatus = false;
     receiveButtonStatus  = false;
@@ -70,6 +59,7 @@ Widget::Widget(QWidget *parent) :
 
 Widget::~Widget()
 {
+    onDeviceDisconn();
     saveSettings();
     delete ui;
     delete mytcpclient;
@@ -214,35 +204,15 @@ void Widget::onTcpClientTimeOut()
 
 void Widget::onTcpClientStopButtonClicked()
 {
-    qDebug("stop tcp client");
-    if(flash_step == FlashStep_Flashing )
-    {
-        // 发送3，跳转到app区域
-        connect(mytcpclient, SIGNAL(newMessage(QString, QByteArray)), this, SLOT(onTcpClientAppendMessage(QString, QByteArray)));
-        qDebug() << "send 3, jump to app";
-        QString text = "0x33";
-        mytcpclient->sendMessage(text);
+    qDebug("stop tcp client button clicked");
 
-        if(connTimer->isActive())
-            connTimer->stop();
+    // 断开设备按钮按下后，需要执行以下两个操作，注意：顺序不能反了!!!
+    // 1. 断开和设备的连接
+    onDeviceDisconn();
 
-        flash_step = FlashStep_ToConnDev;
-    }
-
-    disconnect(ui->button_TcpClient, SIGNAL(clicked()), this, SLOT(onTcpClientStopButtonClicked()));
-
-    disconnect(mytcpclient, SIGNAL(myClientConnected(QString, quint16)), this, SLOT(onTcpClientNewConnection(QString, quint16)));
-    disconnect(mytcpclient, SIGNAL(connectionFailed()), this, SLOT(onTcpClientTimeOut()));
-    ui->button_TcpClient->setText("连接设备");
-    mytcpclient->abortConnection();
-
-    ui->lineEdit_TcpClientTargetIP->setDisabled(false);
-    ui->lineEdit_TcpClientTargetPort->setDisabled(false);
-    ui->transmitButton->setDisabled(true);
-    ui->transmitPath->setText("");
-    ui->transmitBrowse->setDisabled(true);
-
-    connect(ui->button_TcpClient, SIGNAL(clicked()), this, SLOT(onTcpClientButtonClicked()));
+    // 2. 断开tcp连接
+    mytcpclient->abort();
+    onTcpClientDisconnected();
 }
 
 void Widget::onTcpClientDisconnectButtonClicked()
@@ -252,21 +222,28 @@ void Widget::onTcpClientDisconnectButtonClicked()
 
 void Widget::onTcpClientDisconnected()
 {
+    disconnect(ui->button_TcpClient, SIGNAL(clicked()), this, SLOT(onTcpClientDisconnectButtonClicked()));
+    disconnect(ui->button_TcpClient, SIGNAL(clicked()), this, SLOT(onTcpClientStopButtonClicked()));
+    disconnect(mytcpclient, SIGNAL(myClientConnected(QString, quint16)), this, SLOT(onTcpClientNewConnection(QString, quint16)));
+    disconnect(mytcpclient, SIGNAL(connectionFailed()), this, SLOT(onTcpClientTimeOut()));
     disconnect(mytcpclient, SIGNAL(myClientDisconnected()), this, SLOT(onTcpClientDisconnected()));
     disconnect(mytcpclient, SIGNAL(newMessage(QString, QByteArray)), this, SLOT(onTcpClientAppendMessage(QString, QByteArray)));
-    disconnect(ui->button_TcpClient, SIGNAL(clicked()), this, SLOT(onTcpClientDisconnectButtonClicked()));
+
+    connect(ui->button_TcpClient, SIGNAL(clicked()), this, SLOT(onTcpClientButtonClicked()));
+
+    mytcpclient->closeClient();
+    mytcpclient->close();
 
     ui->button_TcpClient->setText("连接设备");
     ui->button_TcpClient->setDisabled(false);
     ui->lineEdit_TcpClientTargetIP->setDisabled(false);
     ui->lineEdit_TcpClientTargetPort->setDisabled(false);
 
+    ui->transmitButton->setDisabled(true);
+    ui->transmitPath->setText("");
     ui->transmitBrowse->setDisabled(true);
-
-    mytcpclient->closeClient();
-    mytcpclient->close();
-
-    connect(ui->button_TcpClient, SIGNAL(clicked()), this, SLOT(onTcpClientButtonClicked()));
+    ui->transmitProgress->setValue(0);
+    ui->transmitButton->setText(tr("升级"));
 
     // 停止writeTimer
     if(writeTimer->isActive())
@@ -290,42 +267,57 @@ void Widget::onTcpClientAppendMessage(const QString &from, const QByteArray &mes
     }
 
     // 处理下位机传过来的信息
-    if( (quint8)message.at(0) == 0xA5 )
+    if( (quint8)message.at(0) == 0xA5 )  // 下位机查询是否执行iap
     {
-        qDebug() << "rec board iap signal, now send ack:0xA5";
+        qDebug() << "rec board iap signal, now send ack:0x5A";
         QString text = "5A";
         mytcpclient->sendMessage(text);
 
-        if( flash_step == FlashStep_ToConnDev )
+        // 停止超时计时器和写计时器
+        writeTimer->stop();
+        connTimer->stop();
+
+        // 重新启动超时计时器，如果连接设备成功后，5min内没有升级操作，那么重新复位设备，然后断开连接
+        connTimer->start(OP_TIMEOUT);
+
+        qDebug("enter next step->start flashing");
+        flash_step = FlashStep_Flashing;
+        onDeviceConnSuccess();
+        return;
+    }
+    else if( (quint8)message.at(0) == 0xA6 ) // 下位机请求执行iap
+    {
+        if( devOnlineStatus != true )
         {
-            connPDlg->progressCnt = 100;
-            connPDlg->setValue( connPDlg->progressCnt );
-            connPDlg->progressCnt = 0;
-            connPDlg->setValue( connPDlg->progressCnt );
-            connPDlg->reset();
-            connPDlg->hide();
-            connPDlg->progressTimer->stop();
-
-            ui->transmitBrowse->setEnabled(true);
-            if(ui->transmitPath->text().isEmpty() != true) {
-                qDebug("set enable");
-                ui->transmitButton->setEnabled(true);
-            }
-
+            qDebug() << "rec board iap signal:0xA6, first, disp conn success";
             // 停止超时计时器和写计时器
             writeTimer->stop();
             connTimer->stop();
 
-            devOnlineStatus = true;
-
-            QMessageBox::information(this, "提示", "设备连接成功", u8"确定");
+            // 重新启动超时计时器，如果连接设备成功后，5min内没有升级操作，那么重新复位设备，然后断开连接
+            connTimer->start(OP_TIMEOUT);
 
             qDebug("enter next step->start flashing");
             flash_step = FlashStep_Flashing;
-            // 停止write计时器
-            writeTimer->stop();
-            // 重新启动超时计时器，如果连接设备成功后，2min内没有升级操作，那么重新复位设备，然后断开连接
-            connTimer->start(OP_TIMEOUT);
+            onDeviceConnSuccess();
+            return;
+        }
+
+        qDebug() << "rec board iap signal:0xA6, request exec iap";
+        if( transmitButtonStatus == true )
+        {
+            qDebug() << ", and transmitButtonStatus is true, send ack:0x6A, exec iap";
+            QString text = "0x6A";
+            mytcpclient->sendMessage(text);
+
+            // 停止操作超时计时器
+            connTimer->stop();
+
+            disconnect(mytcpclient, SIGNAL(newMessage(QString, QByteArray)), this, SLOT(onTcpClientAppendMessage(QString, QByteArray)));
+        }
+        else
+        {
+            qDebug() << ", but transmitButtonStatus not true, ignore";
         }
 
         return;
@@ -379,8 +371,20 @@ void Widget::onTcpClientAppendMessage(const QString &from, const QByteArray &mes
     cc = rec_buff[OFFSET_CC];
     if( fc == (uint8_t)FC_QUERY ) {
         if(cc == CC_QUERY_CONN ) {
-            qDebug("rec device ack, device conn success");
+            qDebug("rec device ack(device in app state), device conn success");
+
+            // 停止超时计时器和写计时器
+            writeTimer->stop();
+            connTimer->stop();
+
+            // 显示连接成功
             onDeviceConnSuccess();
+
+            // 重新启动计时器,复位设备
+            qDebug("enter next step->send rst");
+            flash_step = FlashStep_RstDev;
+            connTimer->start( CONN_TIMEOUT );
+            writeTimer->start(WR_PERIOD);
         }
     }else if( fc == (uint8_t)FC_CTL ) {
         if(cc == CC_SET_IAP ) {
@@ -396,44 +400,60 @@ void Widget::onTcpClientAppendMessage(const QString &from, const QByteArray &mes
             }
         }
     }
-
     qDebug() << "rec_len:" << message.length();
     qDebug() << "data: " << message;
     qDebug("%02x", message.at(0));
 }
 
+void Widget::onDeviceDisconn()
+{
+    if( devOnlineStatus != false )
+    {
+        devOnlineStatus = false;
+
+        // 发送0x7A，跳转到app区域
+        connect(mytcpclient, SIGNAL(newMessage(QString, QByteArray)), this, SLOT(onTcpClientAppendMessage(QString, QByteArray)));
+        qDebug() << "device online when stop button clicked, send 0x7A, ctrl device jump to app";
+        QString text = "0x7A";
+        mytcpclient->sendMessage(text);
+
+    }
+
+    if(connTimer->isActive())
+        connTimer->stop();
+    flash_step = FlashStep_ToConnDev;
+}
+
 void Widget::onDeviceConnSuccess()
 {
-    connPDlg->progressCnt = 100;
-    connPDlg->setValue( connPDlg->progressCnt );
-    connPDlg->progressCnt = 0;
-    connPDlg->setValue( connPDlg->progressCnt );
-    connPDlg->reset();
-    connPDlg->hide();
-    connPDlg->progressTimer->stop();
+    if( devOnlineStatus != true )
+    {
+        devOnlineStatus = true;
 
-    ui->transmitBrowse->setEnabled(true);
-    if(ui->transmitPath->text().isEmpty() != true) {
-        qDebug("set enable");
-        ui->transmitButton->setEnabled(true);
+        // 隐藏连接中的对话框
+        connPDlg->progressCnt = 100;
+        connPDlg->setValue( connPDlg->progressCnt );
+        connPDlg->progressCnt = 0;
+        connPDlg->setValue( connPDlg->progressCnt );
+        connPDlg->reset();
+        connPDlg->hide();
+        connPDlg->progressTimer->stop();
+
+        // 设置可以选择文件
+        ui->transmitBrowse->setEnabled(true);
+        if(ui->transmitPath->text().isEmpty() != true) {
+            qDebug("set enable");
+            ui->transmitButton->setEnabled(true);
+        }
+
+        QMessageBox::information(this, "提示", "设备连接成功", u8"确定");
+    }
+    else
+    {
+        // 启动操作超时
+        connTimer->start(OP_TIMEOUT);
     }
 
-    devOnlineStatus = true;
-
-    // 停止超时计时器和写计时器
-    writeTimer->stop();
-    connTimer->stop();
-
-    QMessageBox::information(this, "提示", "设备连接成功", u8"确定");
-
-    if( flash_step == FlashStep_ToConnDev ) {
-        qDebug("enter next step->send rst");
-        flash_step = FlashStep_RstDev;
-
-        // 重新启动计时器
-        connTimer->start( CONN_TIMEOUT );
-        writeTimer->start(WR_PERIOD);
-    }
 }
 
 void Widget::writeTimeOut()
@@ -474,44 +494,28 @@ void Widget::writeTimeOut()
 
 void Widget::connTimeOut()
 {
+    devOnlineStatus = false;
+
     if( flash_step == FlashStep_ToConnDev) {
         qDebug("conn timerout");
 
-        connect(mytcpclient, SIGNAL(myClientDisconnected()), this, SLOT(onTcpClientDisconnected()));
+        onTcpClientStopButtonClicked();
 
-        connPDlg->hide();
-        connPDlg->progressTimer->stop();
-        connPDlg->progressCnt = 0;
-        connPDlg->setValue( connPDlg->progressCnt );
+        // 停止连接超时定时器
+        connTimer->stop();
+        writeTimer->stop();
+
+        QMessageBox::warning(this, "设备连接失败", "请检查通信连接!", u8"确定");
+    }else if( flash_step == FlashStep_Flashing) {
+        flash_step = FlashStep_ToConnDev;
 
         onTcpClientStopButtonClicked();
 
         // 停止连接超时定时器
         connTimer->stop();
 
-        QMessageBox::warning(this, "设备连接失败", "请检查通信连接!", u8"确定");
-    }else if( flash_step == FlashStep_Flashing) {
-        flash_step = FlashStep_ToConnDev;
-
-        // 发送3，跳转到app区域
-        connect(mytcpclient, SIGNAL(newMessage(QString, QByteArray)), this, SLOT(onTcpClientAppendMessage(QString, QByteArray)));
-        qDebug() << "send 3, jump to app";
-        QString text = "0x33";
-        mytcpclient->sendMessage(text);
-
-        mytcpclient->closeClient();
-
-        ui->transmitButton->setDisabled(true);
-        ui->transmitPath->setText("");
-        ui->transmitBrowse->setDisabled(true);
-
-        QMessageBox::warning(this, "超时", "2分钟内没有执行升级操作，断开设备", u8"确定");
-
-        // 停止连接超时定时器
-        connTimer->stop();
+        QMessageBox::warning(this, "超时", "5分钟内没有执行升级操作，断开设备", u8"确定");
     }
-
-    devOnlineStatus = false;
 }
 
 void Widget::connPDlgTimeout()
@@ -548,7 +552,7 @@ void Widget::on_transmitButton_clicked()
     if(transmitButtonStatus == false)
     {
 //        mytcpclient->closeClient();
-        disconnect(mytcpclient, SIGNAL(newMessage(QString, QByteArray)), this, SLOT(onTcpClientAppendMessage(QString, QByteArray)));
+//        disconnect(mytcpclient, SIGNAL(newMessage(QString, QByteArray)), this, SLOT(onTcpClientAppendMessage(QString, QByteArray)));
         ymodemFileTransmit->setFileName(ui->transmitPath->text());
 
         QHostAddress addr;
@@ -572,11 +576,6 @@ void Widget::transmitTcpclientResult(bool result)
     {
         qDebug("connect success");
         transmitButtonStatus = true;
-
-        // 发送1，进行升级操作
-        qDebug() << "send 1, update";
-        QString text = "0x31";
-        mytcpclient->sendMessage(text);
 
         ui->transmitBrowse->setDisabled(true);
         ui->transmitButton->setText(u8"取消");
@@ -618,28 +617,9 @@ void Widget::transmitStatus(Ymodem::Status status)
         qDebug() << "status finish";
             transmitButtonStatus = false;
 
-            ui->transmitBrowse->setEnabled(true);
-            ui->transmitButton->setText(u8"发送");
-
-            // 发送3，跳转到app区域
-            connect(mytcpclient, SIGNAL(newMessage(QString, QByteArray)), this, SLOT(onTcpClientAppendMessage(QString, QByteArray)));
-            qDebug() << "send 3, jump to app";
-            QString text = "0x33";
-            mytcpclient->sendMessage(text);
-
-            flash_step = FlashStep_ToConnDev;
-
             QMessageBox::warning(this, u8"成功", u8"程序升级成功！", u8"关闭");
-
-            mytcpclient->closeClient();
-
-            ui->button_TcpClient->setEnabled(true);
-            ui->transmitButton->setDisabled(true);
-            ui->transmitPath->setText("");
-            ui->transmitBrowse->setDisabled(true);
-
-            ui->transmitProgress->setValue(0);
-
+            devOnlineStatus = false;
+            onTcpClientStopButtonClicked();
             break;
         }
 
@@ -648,22 +628,9 @@ void Widget::transmitStatus(Ymodem::Status status)
         qDebug() << "status abort";
             transmitButtonStatus = false;
 
-            ui->transmitBrowse->setEnabled(true);
-            ui->transmitButton->setText(u8"发送");
-
-            flash_step = FlashStep_ToConnDev;
-
             QMessageBox::warning(this, u8"失败", u8"程序升级失败！", u8"关闭");
-
-            mytcpclient->closeClient();
-
-            ui->button_TcpClient->setEnabled(true);
-            ui->transmitButton->setDisabled(true);
-            ui->transmitPath->setText("");
-            ui->transmitBrowse->setDisabled(true);
-
-            ui->transmitProgress->setValue(0);
-
+            devOnlineStatus = false;
+            onTcpClientStopButtonClicked();
             break;
         }
 
@@ -672,21 +639,9 @@ void Widget::transmitStatus(Ymodem::Status status)
         qDebug() << "status timeout";
             transmitButtonStatus = false;
 
-            ui->transmitBrowse->setEnabled(true);
-            ui->transmitButton->setText(u8"发送");
-
-            flash_step = FlashStep_ToConnDev;
-
             QMessageBox::warning(this, u8"失败", u8"程序升级失败！", u8"关闭");
-
-            mytcpclient->closeClient();
-
-            ui->button_TcpClient->setEnabled(true);
-            ui->transmitButton->setDisabled(true);
-            ui->transmitPath->setText("");
-            ui->transmitBrowse->setDisabled(true);
-
-            ui->transmitProgress->setValue(0);
+            devOnlineStatus = false;
+            onTcpClientStopButtonClicked();
 
             break;
         }
@@ -696,21 +651,9 @@ void Widget::transmitStatus(Ymodem::Status status)
         qDebug() << "status default";
             transmitButtonStatus = false;
 
-            ui->transmitBrowse->setEnabled(true);
-            ui->transmitButton->setText(u8"发送");
-
-            flash_step = FlashStep_ToConnDev;
-
             QMessageBox::warning(this, u8"失败", u8"文件发送失败！", u8"关闭");
-
-            mytcpclient->closeClient();
-
-            ui->button_TcpClient->setEnabled(true);
-            ui->transmitButton->setDisabled(true);
-            ui->transmitPath->setText("");
-            ui->transmitBrowse->setDisabled(true);
-
-            ui->transmitProgress->setValue(0);
+            devOnlineStatus = false;
+            onTcpClientStopButtonClicked();
         }
     }
 }
@@ -752,8 +695,8 @@ void MyProgressDlg::keyPressEvent(QKeyEvent *event)
 void Widget::on_button_about_clicked()
 {
     QMessageBox::about(this, tr("关于"), tr("功能:  在线升级充电站的固件程序(海康定制版专用)\r\n"
-                                          "版本:  V1.0\r\n"
-                                          "编译时间:  20191010 20:26\r\n"
+                                          "版本:  V1.0.1\r\n"
+                                          "编译时间:  20191012 17:07\r\n"
                                           "作者:  李扬\r\n"
                                           "邮箱:  liyang@ecthf.com\r\n"
                                           "公司：安徽博微智能电气有限公司"));
@@ -762,12 +705,15 @@ void Widget::on_button_about_clicked()
 
 void Widget::on_button_help_clicked()
 {
-    QMessageBox::about(this, tr("帮助"), tr("注意：操作软件前，请先确保电脑已经通过网络(WIFI或者网线)连接到了充电站\r\n"
-                                          "然后执行以下操作：\r\n\r\n"
+    QMessageBox::about(this, tr("帮助"), tr("\r\n[注意]\r\n操作软件前，请先确保电脑已经通过网络(WIFI或者网线)连接到了充电站，然后执行以下操作\r\n"
+                                          "\r\n[升级步骤]\r\n"
                                           "1.修改“IP”为充电站的IP地址(根据实际情况填写)，“Port”填写8899)\r\n"
                                           "2.点击[连接]，会提示连接成功。（如果提示连接失败，请检查网络或者IP地址等）\r\n"
                                           "3.点击[浏览]，在弹出的窗口中选择升级文件，选好后确定\r\n"
                                           "4.点击[升级]，进度栏会显示执行进度\r\n"
-                                          "5.升级完成后，关闭软件\r\n"));
+                                          "5.升级完成后，关闭软件\r\n"
+                                          "\r\n[提示]\r\n"
+                                          "1.点击连接后，如果10s内没有建立通信，则认为连接失败\r\n"
+                                          "2.连接成功后，请在5min内执行升级操作，如果5min内没有执行升级操作，软件会自动断开连接\r\n"));
     return;
 }
