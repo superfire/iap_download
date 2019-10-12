@@ -99,8 +99,8 @@ public:
 #define    PROGRESS_PERIOD 100   // 100ms刷新一次
 #define    WR_PERIOD       500   // 500ms写一次
 #define    CONN_TIMEOUT    10000 // 跟设备连接超时时间，暂定10s
-#define    OP_TIMEOUT      (120000) // 如果设备连接成功后，2min内没有操作，那么重新复位设备，断开连接
-    //1000*60*2
+#define    OP_TIMEOUT      (300000) // 如果设备连接成功后，5min内没有操作，那么重新复位设备，断开连接
+    //1000*60*5
 
     enum FlashStep {
         FlashStep_ToConnDev,
