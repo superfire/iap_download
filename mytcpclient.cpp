@@ -81,7 +81,7 @@ void MyTCPClient::onDisconnected()
 void MyTCPClient::closeClient()
 {
     tcpSocket->close();
-    qDebug() << "close tcpclient";
+    qDebug() << "in mytcpclient, close tcpclient";
 }
 
 void MyTCPClient::abortConnection()

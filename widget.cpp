@@ -306,7 +306,6 @@ void Widget::onTcpClientAppendMessage(const QString &from, const QByteArray &mes
             connPDlg->hide();
             connPDlg->progressTimer->stop();
 
-
             ui->transmitBrowse->setEnabled(true);
             if(ui->transmitPath->text().isEmpty() != true) {
                 qDebug("set enable");
@@ -392,7 +391,7 @@ void Widget::onTcpClientAppendMessage(const QString &from, const QByteArray &mes
 
                 // 停止write计时器
                 writeTimer->stop();
-                // 重新启动超时计时器，如果连接设备成功后，2min内没有升级操作，那么重新复位设备，然后断开连接
+                // 重新启动超时计时器，如果连接设备成功后，5min内没有升级操作，那么重新复位设备，然后断开连接
                 connTimer->start(OP_TIMEOUT);
             }
         }
@@ -616,18 +615,21 @@ void Widget::transmitStatus(Ymodem::Status status)
 
         case YmodemFileTransmit::StatusFinish:
         {
+        qDebug() << "status finish";
             transmitButtonStatus = false;
 
             ui->transmitBrowse->setEnabled(true);
             ui->transmitButton->setText(u8"发送");
-
-            QMessageBox::warning(this, u8"成功", u8"程序升级成功！", u8"关闭");
 
             // 发送3，跳转到app区域
             connect(mytcpclient, SIGNAL(newMessage(QString, QByteArray)), this, SLOT(onTcpClientAppendMessage(QString, QByteArray)));
             qDebug() << "send 3, jump to app";
             QString text = "0x33";
             mytcpclient->sendMessage(text);
+
+            flash_step = FlashStep_ToConnDev;
+
+            QMessageBox::warning(this, u8"成功", u8"程序升级成功！", u8"关闭");
 
             mytcpclient->closeClient();
 
@@ -643,12 +645,15 @@ void Widget::transmitStatus(Ymodem::Status status)
 
         case YmodemFileTransmit::StatusAbort:
         {
+        qDebug() << "status abort";
             transmitButtonStatus = false;
 
             ui->transmitBrowse->setEnabled(true);
             ui->transmitButton->setText(u8"发送");
 
-            QMessageBox::warning(this, u8"失败", u8"文件发送失败！", u8"关闭");
+            flash_step = FlashStep_ToConnDev;
+
+            QMessageBox::warning(this, u8"失败", u8"程序升级失败！", u8"关闭");
 
             mytcpclient->closeClient();
 
@@ -664,12 +669,15 @@ void Widget::transmitStatus(Ymodem::Status status)
 
         case YmodemFileTransmit::StatusTimeout:
         {
+        qDebug() << "status timeout";
             transmitButtonStatus = false;
 
             ui->transmitBrowse->setEnabled(true);
             ui->transmitButton->setText(u8"发送");
 
-            QMessageBox::warning(this, u8"失败", u8"文件发送失败！", u8"关闭");
+            flash_step = FlashStep_ToConnDev;
+
+            QMessageBox::warning(this, u8"失败", u8"程序升级失败！", u8"关闭");
 
             mytcpclient->closeClient();
 
@@ -685,10 +693,13 @@ void Widget::transmitStatus(Ymodem::Status status)
 
         default:
         {
+        qDebug() << "status default";
             transmitButtonStatus = false;
 
             ui->transmitBrowse->setEnabled(true);
             ui->transmitButton->setText(u8"发送");
+
+            flash_step = FlashStep_ToConnDev;
 
             QMessageBox::warning(this, u8"失败", u8"文件发送失败！", u8"关闭");
 
