@@ -41,12 +41,12 @@ void YmodemFileTransmit::setFileName(const QString &name)
 
 void YmodemFileTransmit::setPortName(const QString &name)
 {
-    serialPort->setPortName(name);
+//    serialPort->setPortName(name);
 }
 
 void YmodemFileTransmit::setPortBaudRate(qint32 baudrate)
 {
-    serialPort->setBaudRate(baudrate);
+//    serialPort->setBaudRate(baudrate);
 }
 
 void YmodemFileTransmit::setTcpClientSetting(QHostAddress addr, quint16 port)

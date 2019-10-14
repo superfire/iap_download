@@ -25,7 +25,6 @@ Widget::Widget(QWidget *parent) :
     ui(new Ui::Widget),
     mytcpclient(new MyTCPClient), /* 初始化的顺序跟定义的顺序一致 */
     ymodemFileTransmit(new YmodemFileTransmit),
-    ymodemFileReceive(new YmodemFileReceive),
     writeTimer(new QTimer),
     connTimer(new QTimer),
     connPDlg(new MyProgressDlg(this)),
@@ -39,7 +38,6 @@ Widget::Widget(QWidget *parent) :
     ui->transmitBrowse->setDisabled(true);
 
     transmitButtonStatus = false;
-    receiveButtonStatus  = false;
     devOnlineStatus = false;
 
     flash_step = FlashStep_ToConnDev;
@@ -64,7 +62,6 @@ Widget::~Widget()
     delete ui;
     delete mytcpclient;
     delete ymodemFileTransmit;
-    delete ymodemFileReceive;
     delete writeTimer;
     delete connTimer;
     delete connPDlg;

@@ -6,7 +6,6 @@
 
 QT       += core gui
 QT       += network
-QT       += serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -31,14 +30,12 @@ SOURCES += \
         widget.cpp \
     mytcpclient.cpp \
     Ymodem.cpp \
-    YmodemFileReceive.cpp \
     YmodemFileTransmit.cpp
 
 HEADERS += \
         widget.h \
     mytcpclient.h \
     Ymodem.h \
-    YmodemFileReceive.h \
     YmodemFileTransmit.h
 
 FORMS += \
@@ -49,19 +46,19 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-# Í¼±ê
+# Í¼ï¿½ï¿½
 RC_ICONS += res/logo.ico
-# °æ±¾ºÅ
+# ï¿½æ±¾ï¿½ï¿½
 VERSION = 1.0.0.1
-# ÓïÑÔ
-# 0x0004 ±íÊ¾ ¼òÌåÖÐÎÄ
-# Ïê¼û https://msdn.microsoft.com/en-us/library/dd318693%28vs.85%29.aspx
+# ï¿½ï¿½ï¿½ï¿½
+# 0x0004 ï¿½ï¿½Ê¾ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+# ï¿½ï¿½ï¿½ï¿½ https://msdn.microsoft.com/en-us/library/dd318693%28vs.85%29.aspx
 RC_LANG = 0x0004
-# ¹«Ë¾Ãû
-QMAKE_TARGET_COMPANY = °²»Õ²©Î¢ÖÇÄÜµçÆøÓÐÏÞ¹«Ë¾
-# ²úÆ·Ãû³Æ
-QMAKE_TARGET_PRODUCT = ³äµçÕ¾¹Ì¼þÔÚÏßÉý¼¶¹¤¾ß(º£¿µ¶¨ÖÆ°æ×¨ÓÃ)
-# ÏêÏ¸ÃèÊö
-QMAKE_TARGET_DESCRIPTION = ÔÚÏßÉý¼¶
-# °æÈ¨
+# ï¿½ï¿½Ë¾ï¿½ï¿½
+QMAKE_TARGET_COMPANY = ï¿½ï¿½ï¿½Õ²ï¿½Î¢ï¿½ï¿½ï¿½Üµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¹ï¿½Ë¾
+# ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ï¿½
+QMAKE_TARGET_PRODUCT = ï¿½ï¿½ï¿½ï¿½Õ¾ï¿½Ì¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ°ï¿½×¨ï¿½ï¿½)
+# ï¿½ï¿½Ï¸ï¿½ï¿½ï¿½ï¿½
+QMAKE_TARGET_DESCRIPTION = ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+# ï¿½ï¿½È¨
 QMAKE_TARGET_COPYRIGHT = Copyright(C) 2019 CETC ECRIEEPOWER (ANHUI) CO.,LTD.

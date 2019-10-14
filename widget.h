@@ -3,7 +3,6 @@
 
 #include <QWidget>
 #include "YmodemFileTransmit.h"
-#include "YmodemFileReceive.h"
 
 #include <QNetworkInterface>
 #include <QSettings>
@@ -151,11 +150,8 @@ private:
     quint16 tcpClientTargetPort;
     bool devOnlineStatus;
 
-    QSerialPort *serialPort;
     YmodemFileTransmit *ymodemFileTransmit;
-    YmodemFileReceive *ymodemFileReceive;
     bool transmitButtonStatus;
-    bool receiveButtonStatus;
 
     enum FlashStep flash_step;
     QTimer *writeTimer = nullptr;

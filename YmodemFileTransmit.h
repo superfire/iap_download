@@ -4,7 +4,6 @@
 #include <QFile>
 #include <QTimer>
 #include <QObject>
-#include <QSerialPort>
 #include "Ymodem.h"
 #include "mytcpclient.h"
 
@@ -50,7 +49,6 @@ private:
     QFile       *file;
     QTimer      *readTimer;
     QTimer      *writeTimer;
-    QSerialPort *serialPort;
 
     MyTCPClient *mytcpclient = nullptr;
 //    QString settingsFileDir;
