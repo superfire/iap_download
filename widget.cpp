@@ -693,7 +693,7 @@ void Widget::on_button_about_clicked()
 {
     QMessageBox::about(this, tr("关于"), tr("功能:  在线升级充电站的固件程序(海康定制版专用)\r\n"
                                           "版本:  V1.0.1\r\n"
-                                          "编译时间:  20191012 17:07\r\n"
+                                          "编译时间:  20191014 11:34\r\n"
                                           "作者:  李扬\r\n"
                                           "邮箱:  liyang@ecthf.com\r\n"
                                           "公司：安徽博微智能电气有限公司"));
