@@ -46,19 +46,18 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-# Í¼ï¿½ï¿½
+# Í¼±êÎ»ÖÃ
 RC_ICONS += res/logo.ico
-# ï¿½æ±¾ï¿½ï¿½
+# °æ±¾ºÅ
 VERSION = 1.0.0.1
-# ï¿½ï¿½ï¿½ï¿½
-# 0x0004 ï¿½ï¿½Ê¾ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-# ï¿½ï¿½ï¿½ï¿½ https://msdn.microsoft.com/en-us/library/dd318693%28vs.85%29.aspx
+# ÓïÑÔ
+# 0x0004 - ¼òÌåÖÐÎÄ£¬²Î¿¼Á´½Ó£ºhttps://msdn.microsoft.com/en-us/library/dd318693%28vs.85%29.aspx
 RC_LANG = 0x0004
-# ï¿½ï¿½Ë¾ï¿½ï¿½
-QMAKE_TARGET_COMPANY = ï¿½ï¿½ï¿½Õ²ï¿½Î¢ï¿½ï¿½ï¿½Üµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¹ï¿½Ë¾
-# ï¿½ï¿½Æ·ï¿½ï¿½ï¿½ï¿½
-QMAKE_TARGET_PRODUCT = ï¿½ï¿½ï¿½ï¿½Õ¾ï¿½Ì¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ°ï¿½×¨ï¿½ï¿½)
-# ï¿½ï¿½Ï¸ï¿½ï¿½ï¿½ï¿½
-QMAKE_TARGET_DESCRIPTION = ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-# ï¿½ï¿½È¨
+# ¹«Ë¾Ãû
+QMAKE_TARGET_COMPANY = °²»Õ²©Î¢ÖÇÄÜµçÆøÓÐÏÞ¹«Ë¾
+# ²úÆ·Ãû³Æ
+QMAKE_TARGET_PRODUCT = ¹Ì¼þÉý¼¶¹¤¾ß(º£¿µ¶¨ÖÆ°æ×¨ÓÃ)
+# ÏêÏ¸ÃèÊö
+QMAKE_TARGET_DESCRIPTION = ¹Ì¼þÉý¼¶¹¤¾ß
+# °æÈ¨
 QMAKE_TARGET_COPYRIGHT = Copyright(C) 2019 CETC ECRIEEPOWER (ANHUI) CO.,LTD.
