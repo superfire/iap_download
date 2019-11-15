@@ -20,15 +20,21 @@ uint16_t crc16(uint8_t *buffer, uint16_t buffer_length)
     return (uint16_t)(crc_hi << 8 | crc_lo);
 }
 
+void Delay_MSec_Suspend(unsigned int msec)
+{
+    QTime _Timer = QTime::currentTime().addMSecs(msec);
+    while( QTime::currentTime() < _Timer );
+}
+
 Widget::Widget(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::Widget),
-    mytcpclient(new MyTCPClient), /* 初始化的顺序跟定义的顺序一致 */
-    ymodemFileTransmit(new YmodemFileTransmit),
-    writeTimer(new QTimer),
-    connTimer(new QTimer),
-    connPDlg(new MyProgressDlg(this)),
-    fileDlg(new QFileDialog(this))
+    QWidget(parent)
+    ,ui(new Ui::Widget)
+    ,mytcpclient(new MyTCPClient) /* 初始化的顺序跟定义的顺序一致 */
+    ,ymodemFileTransmit(new YmodemFileTransmit)
+    ,writeTimer(new QTimer)
+    ,connTimer(new QTimer)
+    ,connPDlg(new MyProgressDlg(this))
+    ,fileDlg(new QFileDialog(this))
 {
     qDebug() << "widget init...";
     ui->setupUi(this);
@@ -140,7 +146,6 @@ void Widget::onTcpClientButtonClicked()
     connPDlg->move(this->x() + this->width()/2 - connPDlg->width()/2, this->y() + this->height()/2 - connPDlg->height()/2);
     connPDlg->show();
     connPDlg->progressTimer->start(PROGRESS_PERIOD);
-
 //    saveSettings();
 }
 
@@ -157,10 +162,13 @@ void Widget::onTcpClientNewConnection(const QString &from, quint16 port)
 
     connect(mytcpclient, SIGNAL(newMessage(QString, QByteArray)), this, SLOT(onTcpClientAppendMessage(QString, QByteArray)));
 
+//    // 停止网口打开超时定时器;
+//    tcpConnectTimer->stop();
+
     // 发送设备查询指令
     qDebug("new connection established, Send query dev instructions");
 
-    // 重新启动连接超时计时器
+    // 启动连接超时计时器
     qDebug("restart conn timer");
     if( connTimer->isActive() ) {
         connTimer->stop();
@@ -188,7 +196,8 @@ void Widget::onTcpClientTimeOut()
     mytcpclient->closeClient();
     connect(ui->button_TcpClient, SIGNAL(clicked()), this, SLOT(onTcpClientButtonClicked()));
 
-    QMessageBox::warning(this, "设备连接失败", "请检查设备地址是否正确!", u8"断开连接");
+//    // 停止网口打开超时定时器;
+//    tcpConnectTimer->stop();
 
     if(writeTimer->isActive()) {
         writeTimer->stop();
@@ -197,6 +206,8 @@ void Widget::onTcpClientTimeOut()
     if( connTimer->isActive() ) {
         connTimer->stop();
     }
+
+    QMessageBox::warning(this, "设备连接失败", "请检查设备地址是否正确!", u8"断开连接");
 }
 
 void Widget::onTcpClientStopButtonClicked()
@@ -611,12 +622,34 @@ void Widget::transmitStatus(Ymodem::Status status)
 
         case YmodemFileTransmit::StatusFinish:
         {
-        qDebug() << "status finish";
-            transmitButtonStatus = false;
+            qDebug() << "status finish";
 
-            QMessageBox::warning(this, u8"成功", u8"程序升级成功！", u8"关闭");
+            // 传输完成后，执行升级操作，大改需要5s，这里延时6s
+            QProgressDialog execUpdateDlg(this);
+            execUpdateDlg.setWindowTitle("执行升级");
+            execUpdateDlg.setMinimum(0);
+            execUpdateDlg.setMaximum( 60 );
+            execUpdateDlg.setValue(0);
+            execUpdateDlg.setLabelText("升级中...");
+            execUpdateDlg.setWindowFlag( Qt::FramelessWindowHint );
+            execUpdateDlg.setModal(true);
+            QPushButton *btn = nullptr;
+            execUpdateDlg.setCancelButton(btn);
+            execUpdateDlg.reset();
+            execUpdateDlg.show();
+
+            uint32_t cnt = 0;
+            do{
+                Delay_MSec_Suspend(100);
+                ++cnt;
+                execUpdateDlg.setValue(cnt);
+            }while(cnt < 60);
+
+            transmitButtonStatus = false;
             devOnlineStatus = false;
             onTcpClientStopButtonClicked();
+
+            QMessageBox::warning(this, u8"成功", u8"程序升级成功！", u8"关闭");
             break;
         }
 
@@ -692,8 +725,8 @@ void MyProgressDlg::keyPressEvent(QKeyEvent *event)
 void Widget::on_button_about_clicked()
 {
     QMessageBox::about(this, tr("关于"), tr("功能:  在线升级充电站的固件程序(海康定制版专用)\r\n"
-                                          "版本:  V1.0.1\r\n"
-                                          "编译时间:  20191014 11:34\r\n"
+                                          "版本:  V1.0.2\r\n"
+                                          "编译时间:  20191115 15:28\r\n"
                                           "作者:  李扬\r\n"
                                           "邮箱:  liyang@ecthf.com\r\n"
                                           "公司：安徽博微智能电气有限公司"));
@@ -702,9 +735,11 @@ void Widget::on_button_about_clicked()
 
 void Widget::on_button_help_clicked()
 {
-    QMessageBox::about(this, tr("帮助"), tr("\r\n[注意]\r\n操作软件前，请先确保电脑已经通过网络(WIFI或者网线)连接到了充电站，然后执行以下操作\r\n"
+    QMessageBox::about(this, tr("帮助"), tr("\r\n[准备工作]\r\n"
+                                          "1.操作软件前，请先确保电脑已经通过网络( WIFI或者网线 )连接到了充电站\r\n"
+                                          "2.断开主控与充电机的网线，然后执行“升级步骤”\r\n"
                                           "\r\n[升级步骤]\r\n"
-                                          "1.修改“IP”为充电站的IP地址(根据实际情况填写)，“Port”填写8899)\r\n"
+                                          "1.修改“IP”为充电站的IP地址:192.168.1.80(如有变动，根据实际情况填写)，“Port”填写8899)\r\n"
                                           "2.点击[连接]，会提示连接成功。（如果提示连接失败，请检查网络或者IP地址等）\r\n"
                                           "3.点击[浏览]，在弹出的窗口中选择升级文件，选好后确定\r\n"
                                           "4.点击[升级]，进度栏会显示执行进度\r\n"
