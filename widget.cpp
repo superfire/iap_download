@@ -193,19 +193,7 @@ void Widget::onTcpClientTimeOut()
     ui->lineEdit_TcpClientTargetPort->setDisabled(false);
     ui->transmitBrowse->setDisabled(true);
 
-    mytcpclient->closeClient();
-    connect(ui->button_TcpClient, SIGNAL(clicked()), this, SLOT(onTcpClientButtonClicked()));
-
-//    // 停止网口打开超时定时器;
-//    tcpConnectTimer->stop();
-
-    if(writeTimer->isActive()) {
-        writeTimer->stop();
-    }
-
-    if( connTimer->isActive() ) {
-        connTimer->stop();
-    }
+    onTcpClientStopButtonClicked();
 
     QMessageBox::warning(this, "设备连接失败", "请检查设备地址是否正确!", u8"断开连接");
 }
